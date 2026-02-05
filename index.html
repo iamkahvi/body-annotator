@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Body Annotator</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>Body Log</h1>
+    </header>
+
+    <main>
+      <section class="body-section">
+        <svg viewBox="0 0 200 400" class="body-diagram">
+          <!-- Head -->
+          <ellipse data-part="head" cx="100" cy="30" rx="25" ry="28" />
+
+          <!-- Neck -->
+          <rect data-part="neck" x="90" y="58" width="20" height="15" />
+
+          <!-- Shoulders -->
+          <ellipse data-part="left_shoulder" cx="60" cy="85" rx="18" ry="12" />
+          <ellipse data-part="right_shoulder" cx="140" cy="85" rx="18" ry="12" />
+
+          <!-- Upper Arms -->
+          <rect data-part="left_upper_arm" cx="38" cy="120" x="30" y="95" width="18" height="45" rx="8" />
+          <rect data-part="right_upper_arm" cx="162" cy="120" x="152" y="95" width="18" height="45" rx="8" />
+
+          <!-- Elbows -->
+          <ellipse data-part="left_elbow" cx="38" cy="145" rx="10" ry="8" />
+          <ellipse data-part="right_elbow" cx="162" cy="145" rx="10" ry="8" />
+
+          <!-- Forearms -->
+          <rect data-part="left_forearm" x="28" y="153" width="16" height="40" rx="6" />
+          <rect data-part="right_forearm" x="156" y="153" width="16" height="40" rx="6" />
+
+          <!-- Hands -->
+          <ellipse data-part="left_hand" cx="36" cy="205" rx="12" ry="15" />
+          <ellipse data-part="right_hand" cx="164" cy="205" rx="12" ry="15" />
+
+          <!-- Chest -->
+          <rect data-part="chest" x="65" y="73" width="70" height="50" rx="5" />
+
+          <!-- Abdomen -->
+          <rect data-part="abdomen" x="70" y="123" width="60" height="45" rx="5" />
+
+          <!-- Lower Back (visual indicator - same position as abdomen) -->
+          <rect data-part="lower_back" x="75" y="148" width="50" height="25" rx="3" class="back-region" />
+
+          <!-- Hips -->
+          <ellipse data-part="left_hip" cx="75" cy="180" rx="15" ry="12" />
+          <ellipse data-part="right_hip" cx="125" cy="180" rx="15" ry="12" />
+
+          <!-- Upper Legs -->
+          <rect data-part="left_thigh" x="62" y="190" width="28" height="60" rx="10" />
+          <rect data-part="right_thigh" x="110" y="190" width="28" height="60" rx="10" />
+
+          <!-- Knees -->
+          <ellipse data-part="left_knee" cx="76" cy="260" rx="14" ry="12" />
+          <ellipse data-part="right_knee" cx="124" cy="260" rx="14" ry="12" />
+
+          <!-- Lower Legs -->
+          <rect data-part="left_calf" x="64" y="272" width="24" height="55" rx="8" />
+          <rect data-part="right_calf" x="112" y="272" width="24" height="55" rx="8" />
+
+          <!-- Ankles -->
+          <ellipse data-part="left_ankle" cx="76" cy="332" rx="12" ry="8" />
+          <ellipse data-part="right_ankle" cx="124" cy="332" rx="12" ry="8" />
+
+          <!-- Feet -->
+          <ellipse data-part="left_foot" cx="76" cy="360" rx="16" ry="20" />
+          <ellipse data-part="right_foot" cx="124" cy="360" rx="16" ry="20" />
+        </svg>
+        <p class="hint">Tap a body part to add a note</p>
+      </section>
+
+      <section class="notes-section">
+        <div class="notes-controls">
+          <input type="search" id="search" placeholder="Search notes..." />
+          <select id="sort">
+            <option value="date-desc">Newest first</option>
+            <option value="date-asc">Oldest first</option>
+            <option value="body-part">By body part</option>
+          </select>
+          <select id="filter-part">
+            <option value="">All body parts</option>
+          </select>
+        </div>
+        <div id="notes-list" class="notes-list"></div>
+      </section>
+    </main>
+
+    <!-- Modal -->
+    <div id="modal" class="modal hidden">
+      <div class="modal-content">
+        <button id="close-modal-btn" class="modal-close">&times;</button>
+        <h2>Add Note</h2>
+        <p class="selected-part">Selected: <strong id="modal-part-name"></strong></p>
+        <input type="date" id="note-date" />
+        <textarea id="note-text" placeholder="Describe the sensation or injury..." rows="4"></textarea>
+        <div class="modal-actions">
+          <button id="delete-btn" class="btn-danger hidden">Delete</button>
+          <button id="save-btn" class="btn-primary">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
