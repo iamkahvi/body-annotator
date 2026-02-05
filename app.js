@@ -1,3 +1,5 @@
+import { init3DBody, updateBodyHighlights3D } from './body3d.js';
+
 const STORAGE_KEY = 'body-annotator-notes';
 
 const BODY_PARTS = [
@@ -36,11 +38,20 @@ const filterPartSelect = document.getElementById('filter-part');
 // Initialize
 function init() {
   loadNotes();
-  setupBodyPartListeners();
+  setup3DBody();
   setupModalListeners();
   setupFilterListeners();
   populateFilterDropdown();
   renderNotes();
+}
+
+// 3D Body setup
+function setup3DBody() {
+  const container = document.getElementById('body-3d-container');
+  init3DBody(container, (partName) => {
+    selectedPart = partName;
+    openModal();
+  });
 }
 
 // LocalStorage
@@ -53,15 +64,6 @@ function saveNotes() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(notes));
 }
 
-// Body part interactions
-function setupBodyPartListeners() {
-  document.querySelectorAll('[data-part]').forEach(el => {
-    el.addEventListener('click', () => {
-      selectedPart = el.dataset.part;
-      openModal();
-    });
-  });
-}
 
 // Modal
 function openModal(existingNote = null) {
@@ -193,58 +195,26 @@ function getFilteredNotes() {
 
 // Body part highlighting
 function updateBodyHighlights() {
-  const now = Date.now();
-  const THREE_WEEKS_MS = 21 * 24 * 60 * 60 * 1000;
-
-  // Get most recent note timestamp for each body part
-  const mostRecent = {};
-  notes.forEach(note => {
-    if (!mostRecent[note.bodyPart] || note.timestamp > mostRecent[note.bodyPart]) {
-      mostRecent[note.bodyPart] = note.timestamp;
-    }
-  });
-
-  // Update each body part element
-  document.querySelectorAll('[data-part]').forEach(el => {
-    const part = el.dataset.part;
-    const timestamp = mostRecent[part];
-
-    if (!timestamp) {
-      el.style.fill = '';
-      return;
-    }
-
-    const age = now - timestamp;
-    const intensity = Math.max(0, 1 - (age / THREE_WEEKS_MS));
-
-    if (intensity > 0) {
-      // Interpolate from default (#3d3d3d) toward accent (#4a9eff)
-      const r = Math.round(61 + (74 - 61) * intensity);
-      const g = Math.round(61 + (158 - 61) * intensity);
-      const b = Math.round(61 + (255 - 61) * intensity);
-      el.style.fill = `rgb(${r}, ${g}, ${b})`;
-    } else {
-      el.style.fill = '';
-    }
-  });
+  updateBodyHighlights3D(notes);
 }
 
 // Rendering
 function renderNotes() {
   const filtered = getFilteredNotes();
 
+  // Always update 3D body highlights
+  updateBodyHighlights();
+
   if (filtered.length === 0) {
     notesList.innerHTML = `
       <div class="empty-state">
         ${notes.length === 0
-          ? 'No notes yet. Tap a body part to add one.'
+          ? 'No notes yet. Click a body part to add one.'
           : 'No notes match your search.'}
       </div>
     `;
     return;
   }
-
-  updateBodyHighlights();
 
   notesList.innerHTML = filtered.map(note => `
     <div class="note-card" data-id="${note.id}">

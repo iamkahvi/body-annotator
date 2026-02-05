@@ -55,29 +55,17 @@ main {
   align-items: center;
 }
 
-.body-diagram {
+.body-3d-container {
   width: 100%;
-  max-width: 280px;
-  height: auto;
+  max-width: 350px;
+  height: 400px;
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: grab;
 }
 
-.body-diagram [data-part] {
-  fill: var(--body-fill);
-  stroke: var(--body-stroke);
-  stroke-width: 1.5;
-  cursor: pointer;
-  transition: fill 0.15s, stroke 0.15s;
-}
-
-.body-diagram [data-part]:hover,
-.body-diagram [data-part].active {
-  fill: var(--body-hover);
-  stroke: var(--accent);
-}
-
-.body-diagram .back-region {
-  fill: var(--body-fill);
-  opacity: 0.7;
+.body-3d-container:active {
+  cursor: grabbing;
 }
 
 .hint {
@@ -319,6 +307,10 @@ main {
     position: sticky;
     top: 1rem;
     width: 45%;
+  }
+
+  .body-3d-container {
+    height: 500px;
   }
 
   .notes-section {
