@@ -27,12 +27,20 @@ let editingNoteId = null;
 // DOM elements
 const modal = document.getElementById('modal');
 const modalTitle = document.getElementById('modal-title');
-const modalPartName = document.getElementById('modal-part-name');
 const noteText = document.getElementById('note-text');
 const noteStartDate = document.getElementById('note-start-date');
 const noteEndDate = document.getElementById('note-end-date');
+const modalDisplay = document.getElementById('modal-display');
+const modalEdit = document.getElementById('modal-edit');
+const displayDateRange = document.getElementById('display-date-range');
+const displayDuration = document.getElementById('display-duration');
+const displayDescription = document.getElementById('display-description');
+const modalActionsDisplay = document.getElementById('modal-actions-display');
+const modalActionsEdit = document.getElementById('modal-actions-edit');
 const saveBtn = document.getElementById('save-btn');
 const resolveBtn = document.getElementById('resolve-btn');
+const editBtn = document.getElementById('edit-btn');
+const cancelEditBtn = document.getElementById('cancel-edit-btn');
 const closeModalBtn = document.getElementById('close-modal-btn');
 const deleteBtn = document.getElementById('delete-btn');
 const notesList = document.getElementById('notes-list');
@@ -108,25 +116,47 @@ function openModal(existingNote = null) {
     const isOngoing = existingNote.endDate == null;
     editingNoteId = existingNote.id;
     selectedPart = existingNote.bodyPart;
-    noteStartDate.value = toDateInputValue(existingNote.startDate);
-    noteEndDate.value = isOngoing ? '' : toDateInputValue(existingNote.endDate);
-    noteText.value = existingNote.description;
-    deleteBtn.classList.remove('hidden');
-    resolveBtn.classList.toggle('hidden', !isOngoing);
-    modalTitle.textContent = 'Edit Note';
+    populateEditFields(existingNote);
+    populateDisplayFields(existingNote);
+    setModalMode('display', { isNew: false, isOngoing });
   } else {
     editingNoteId = null;
     const today = new Date().toISOString().split('T')[0];
     noteStartDate.value = today;
     noteEndDate.value = '';
     noteText.value = '';
-    deleteBtn.classList.add('hidden');
-    resolveBtn.classList.add('hidden');
-    modalTitle.textContent = 'Add Note';
+    setModalMode('edit', { isNew: true, isOngoing: false });
   }
-  modalPartName.textContent = formatPartName(selectedPart);
   modal.classList.remove('hidden');
+  if (modalEdit.classList.contains('hidden')) return;
   noteText.focus();
+}
+
+function populateEditFields(note) {
+  noteStartDate.value = toDateInputValue(note.startDate);
+  noteEndDate.value = note.endDate == null ? '' : toDateInputValue(note.endDate);
+  noteText.value = note.description;
+}
+
+function populateDisplayFields(note) {
+  displayDateRange.textContent = formatDateRange(note.startDate, note.endDate);
+  displayDuration.textContent = `Duration: ${formatDuration(note.startDate, note.endDate)}`;
+  displayDescription.textContent = note.description;
+}
+
+function setModalMode(mode, { isNew = false, isOngoing = false } = {}) {
+  const isDisplay = mode === 'display';
+  modalDisplay.classList.toggle('hidden', !isDisplay);
+  modalEdit.classList.toggle('hidden', isDisplay);
+  modalActionsDisplay.classList.toggle('hidden', !isDisplay);
+  modalActionsEdit.classList.toggle('hidden', isDisplay);
+  resolveBtn.classList.toggle('hidden', !isDisplay || !isOngoing);
+  editBtn.classList.toggle('hidden', !isDisplay);
+  deleteBtn.classList.toggle('hidden', isNew);
+  cancelEditBtn.classList.toggle('hidden', isNew);
+
+  const title = selectedPart ? formatTitleCase(selectedPart) : 'Note';
+  modalTitle.textContent = title;
 }
 
 function closeModal() {
@@ -188,6 +218,32 @@ function setupModalListeners() {
     saveNotes();
     renderNotes();
     closeModal();
+  });
+
+  editBtn.addEventListener('click', () => {
+    if (!editingNoteId) return;
+    const note = notes.find(n => n.id === editingNoteId);
+    if (!note) return;
+
+    populateEditFields(note);
+    setModalMode('edit', { isNew: false });
+    noteText.focus();
+  });
+
+  cancelEditBtn.addEventListener('click', () => {
+    if (!editingNoteId) {
+      closeModal();
+      return;
+    }
+
+    const note = notes.find(n => n.id === editingNoteId);
+    if (!note) {
+      closeModal();
+      return;
+    }
+
+    populateDisplayFields(note);
+    setModalMode('display', { isNew: false, isOngoing: note.endDate == null });
   });
 
   modal.addEventListener('click', (e) => {
@@ -324,6 +380,13 @@ function noteSortDate(note, now) {
 
 function formatPartName(part) {
   return part.replace(/_/g, ' ');
+}
+
+function formatTitleCase(part) {
+  return formatPartName(part)
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
 }
 
 function toDateInputValue(timestamp) {
