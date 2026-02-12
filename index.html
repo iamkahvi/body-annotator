@@ -40,12 +40,19 @@
     <div id="modal" class="modal hidden">
       <div class="modal-content">
         <button id="close-modal-btn" class="modal-close">&times;</button>
-        <h2>Add Note</h2>
+        <h2 id="modal-title">Add Note</h2>
         <p class="selected-part">Selected: <strong id="modal-part-name"></strong></p>
+        <label class="field-label" for="note-date">Date</label>
         <input type="date" id="note-date" />
+        <label class="field-label" for="note-text">Description</label>
         <textarea id="note-text" placeholder="Describe the sensation or injury..." rows="4"></textarea>
+        <div id="occurrences-section" class="occurrences-section hidden">
+          <label class="field-label">Occurrences</label>
+          <ul id="occurrences-list" class="occurrences-list"></ul>
+        </div>
         <div class="modal-actions">
           <button id="delete-btn" class="btn-danger hidden">Delete</button>
+          <button id="renew-btn" class="btn-secondary hidden">Renew</button>
           <button id="save-btn" class="btn-primary">Save</button>
         </div>
       </div>

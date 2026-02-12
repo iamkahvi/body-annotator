@@ -26,12 +26,16 @@ let editingNoteId = null;
 
 // DOM elements
 const modal = document.getElementById('modal');
+const modalTitle = document.getElementById('modal-title');
 const modalPartName = document.getElementById('modal-part-name');
 const noteText = document.getElementById('note-text');
 const noteDate = document.getElementById('note-date');
 const saveBtn = document.getElementById('save-btn');
+const renewBtn = document.getElementById('renew-btn');
 const closeModalBtn = document.getElementById('close-modal-btn');
 const deleteBtn = document.getElementById('delete-btn');
+const occurrencesList = document.getElementById('occurrences-list');
+const occurrencesSection = document.getElementById('occurrences-section');
 const notesList = document.getElementById('notes-list');
 const searchInput = document.getElementById('search');
 const sortSelect = document.getElementById('sort');
@@ -60,35 +64,66 @@ function setupBody() {
 function loadNotes() {
   const stored = localStorage.getItem(STORAGE_KEY);
   notes = stored ? JSON.parse(stored) : [];
+  // Migrate old notes: timestamp → createdAt + occurrences
+  let migrated = false;
+  notes.forEach(note => {
+    if (note.timestamp && !note.occurrences) {
+      note.createdAt = note.timestamp;
+      note.occurrences = [note.timestamp];
+      delete note.timestamp;
+      migrated = true;
+    }
+  });
+  if (migrated) saveNotes();
 }
 
 function saveNotes() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(notes));
 }
 
+/** Most recent occurrence timestamp for a note */
+function latestOccurrence(note) {
+  return Math.max(...note.occurrences);
+}
 
 // Modal
 function openModal(existingNote = null) {
   if (existingNote) {
     editingNoteId = existingNote.id;
     selectedPart = existingNote.bodyPart;
-    noteDate.value = new Date(existingNote.timestamp).toISOString().split('T')[0];
+    noteDate.value = new Date().toISOString().split('T')[0];
     noteText.value = existingNote.description;
     deleteBtn.classList.remove('hidden');
+    renewBtn.classList.remove('hidden');
+    modalTitle.textContent = 'Edit Note';
+    renderOccurrences(existingNote);
+    occurrencesSection.classList.remove('hidden');
   } else {
     editingNoteId = null;
     noteDate.value = new Date().toISOString().split('T')[0];
     noteText.value = '';
     deleteBtn.classList.add('hidden');
+    renewBtn.classList.add('hidden');
+    modalTitle.textContent = 'Add Note';
+    occurrencesSection.classList.add('hidden');
   }
   modalPartName.textContent = formatPartName(selectedPart);
   modal.classList.remove('hidden');
   noteText.focus();
 }
 
+function renderOccurrences(note) {
+  const sorted = [...note.occurrences].sort((a, b) => b - a);
+  occurrencesList.innerHTML = sorted.map(ts => {
+    const d = new Date(ts);
+    return `<li>${d.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}</li>`;
+  }).join('');
+}
+
 function closeModal() {
   modal.classList.add('hidden');
   selectedPart = null;
+  editingNoteId = null;
 }
 
 function setupModalListeners() {
@@ -98,23 +133,21 @@ function setupModalListeners() {
     const text = noteText.value.trim();
     if (!text || !selectedPart) return;
 
-    // Parse selected date at noon to avoid timezone issues
     const selectedDate = new Date(noteDate.value + 'T12:00:00');
 
     if (editingNoteId) {
-      // Update existing note
       const note = notes.find(n => n.id === editingNoteId);
       if (note) {
         note.bodyPart = selectedPart;
-        note.timestamp = selectedDate.getTime();
         note.description = text;
       }
     } else {
-      // Create new note
+      const ts = selectedDate.getTime();
       const note = {
         id: crypto.randomUUID(),
         bodyPart: selectedPart,
-        timestamp: selectedDate.getTime(),
+        createdAt: ts,
+        occurrences: [ts],
         description: text
       };
       notes.unshift(note);
@@ -123,6 +156,31 @@ function setupModalListeners() {
     saveNotes();
     renderNotes();
     closeModal();
+  });
+
+  renewBtn.addEventListener('click', () => {
+    if (!editingNoteId) return;
+    const note = notes.find(n => n.id === editingNoteId);
+    if (!note) return;
+
+    const renewDate = new Date(noteDate.value + 'T12:00:00').getTime();
+
+    // Don't add duplicate dates (same day)
+    const renewDay = new Date(renewDate).toDateString();
+    const alreadyExists = note.occurrences.some(
+      ts => new Date(ts).toDateString() === renewDay
+    );
+    if (alreadyExists) {
+      // Briefly flash the occurrences list to indicate it's already there
+      occurrencesSection.style.outline = '2px solid var(--accent)';
+      setTimeout(() => { occurrencesSection.style.outline = ''; }, 600);
+      return;
+    }
+
+    note.occurrences.push(renewDate);
+    saveNotes();
+    renderOccurrences(note);
+    renderNotes();
   });
 
   modal.addEventListener('click', (e) => {
@@ -166,12 +224,10 @@ function getFilteredNotes() {
 
   let filtered = [...notes];
 
-  // Filter by body part
   if (filterPart) {
     filtered = filtered.filter(n => n.bodyPart === filterPart);
   }
 
-  // Search
   if (search) {
     filtered = filtered.filter(n =>
       n.description.toLowerCase().includes(search) ||
@@ -179,13 +235,12 @@ function getFilteredNotes() {
     );
   }
 
-  // Sort
   switch (sort) {
     case 'date-desc':
-      filtered.sort((a, b) => b.timestamp - a.timestamp);
+      filtered.sort((a, b) => latestOccurrence(b) - latestOccurrence(a));
       break;
     case 'date-asc':
-      filtered.sort((a, b) => a.timestamp - b.timestamp);
+      filtered.sort((a, b) => latestOccurrence(a) - latestOccurrence(b));
       break;
     case 'body-part':
       filtered.sort((a, b) => a.bodyPart.localeCompare(b.bodyPart));
@@ -204,7 +259,6 @@ function updateBodyHighlights() {
 function renderNotes() {
   const filtered = getFilteredNotes();
 
-  // Always update 3D body highlights
   updateBodyHighlights();
 
   if (filtered.length === 0) {
@@ -218,17 +272,22 @@ function renderNotes() {
     return;
   }
 
-  notesList.innerHTML = filtered.map(note => `
-    <div class="note-card" data-id="${note.id}">
-      <div class="note-header">
-        <span class="note-part">${formatPartName(note.bodyPart)}</span>
-        <span class="note-date">${formatDate(note.timestamp)}</span>
-      </div>
-      <p class="note-text">${escapeHtml(note.description)}</p>
-    </div>
-  `).join('');
+  notesList.innerHTML = filtered.map(note => {
+    const latest = latestOccurrence(note);
+    const count = note.occurrences.length;
+    const countBadge = count > 1 ? `<span class="occurrence-count">${count}x</span>` : '';
 
-  // Attach edit handlers
+    return `
+      <div class="note-card" data-id="${note.id}">
+        <div class="note-header">
+          <span class="note-part">${formatPartName(note.bodyPart)} ${countBadge}</span>
+          <span class="note-date">${formatDate(latest)}</span>
+        </div>
+        <p class="note-text">${escapeHtml(note.description)}</p>
+      </div>
+    `;
+  }).join('');
+
   notesList.querySelectorAll('.note-card').forEach(card => {
     card.addEventListener('click', () => {
       const note = notes.find(n => n.id === card.dataset.id);
@@ -254,13 +313,13 @@ function formatDate(timestamp) {
   const diffDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
 
   if (diffDays === 0) {
-    return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    return 'Today';
   } else if (diffDays === 1) {
     return 'Yesterday';
   } else if (diffDays < 7) {
     return date.toLocaleDateString([], { weekday: 'short' });
   } else {
-    return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+    return date.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
   }
 }
 
