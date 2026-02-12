@@ -3,16 +3,18 @@ import { initSVGBody, updateBodyHighlightsSVG } from './body-svg.js';
 const STORAGE_KEY = 'body-annotator-notes';
 
 const BODY_PARTS = [
-  'head', 'neck',
+  'head', 'back_of_head', 'neck',
   'left_shoulder', 'right_shoulder',
   'left_upper_arm', 'right_upper_arm',
   'left_elbow', 'right_elbow',
   'left_forearm', 'right_forearm',
   'left_hand', 'right_hand',
-  'chest', 'abdomen', 'lower_back',
+  'chest', 'upper_back', 'abdomen', 'lower_back',
   'left_hip', 'right_hip',
-  'left_thigh', 'right_thigh',
+  'left_quad', 'right_quad',
+  'left_hamstring', 'right_hamstring',
   'left_knee', 'right_knee',
+  'left_shin', 'right_shin',
   'left_calf', 'right_calf',
   'left_ankle', 'right_ankle',
   'left_foot', 'right_foot'

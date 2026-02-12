@@ -117,7 +117,20 @@ const FRONT_PARTS = [
   },
 ];
 
-const BACK_NAME_REMAP = { abdomen: 'lower_back' };
+const FRONT_NAME_REMAP = {
+  right_calf: 'right_shin',
+  left_calf: 'left_shin',
+  right_thigh: 'right_quad',
+  left_thigh: 'left_quad',
+};
+
+const BACK_NAME_REMAP = {
+  head: 'back_of_head',
+  chest: 'upper_back',
+  abdomen: 'lower_back',
+  right_thigh: 'right_hamstring',
+  left_thigh: 'left_hamstring',
+};
 
 /**
  * Mirror SVG path data horizontally around x=260.
@@ -234,7 +247,8 @@ export function initSVGBody(container, clickCallback) {
   // Front view
   const frontGroup = createSVGElement('g', { class: 'front-view' });
   for (const part of FRONT_PARTS) {
-    frontGroup.appendChild(createPartPath(part.d, part.name));
+    const name = FRONT_NAME_REMAP[part.name] || part.name;
+    frontGroup.appendChild(createPartPath(part.d, name));
   }
 
   // Eyes on the front head
