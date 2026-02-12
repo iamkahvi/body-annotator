@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Body Log - Rounded Timeline</title>
+  <style>
+    :root {
+      --bg: #1a1a1a;
+      --surface: #2a2a2a;
+      --surface-hover: #3a3a3a;
+      --text: #f0f0f0;
+      --text-muted: #888;
+      --accent: #4a9eff;
+      --success: #4caf50; 
+      --warning: #ff9800;
+      --danger: #ff4a4a;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 2rem;
+      max-width: 700px;
+      margin: 0 auto;
+    }
+
+    h2 {
+      border-bottom: 1px solid var(--surface-hover);
+      padding-bottom: 0.5rem;
+      margin-top: 2rem;
+      font-weight: 300;
+      color: var(--text-muted);
+    }
+
+    /* --- NOTE CARDS --- */
+    .note-card {
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Active State Styling */
+    .note-card.active {
+      border-left: 4px solid var(--warning);
+    }
+
+    /* Resolved State Styling */
+    .note-card.resolved {
+      border-left: 4px solid var(--success);
+      opacity: 0.8;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 0.5rem;
+    }
+
+    .title {
+      font-weight: 600;
+      font-size: 1.1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .status-pill {
+      font-size: 0.7rem;
+      padding: 2px 8px;
+      border-radius: 12px;
+      text-transform: uppercase;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+    }
+
+    .active .status-pill {
+      background: rgba(255, 152, 0, 0.15);
+      color: var(--warning);
+    }
+
+    .resolved .status-pill {
+      background: rgba(76, 175, 80, 0.15);
+      color: var(--success);
+    }
+
+    .desc {
+      color: var(--text);
+      line-height: 1.5;
+      margin-top: 0.5rem;
+    }
+
+    /* --- TIMELINE COMPONENT --- */
+    .timeline-wrapper {
+      margin-top: 1.5rem;
+      background: rgba(0,0,0,0.2);
+      padding: 1rem;
+      border-radius: 8px;
+    }
+
+    .month-scale-container {
+      position: relative;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      margin-top: 0.5rem;
+    }
+
+    /* The grey background bar representing the full month(s) */
+    .month-bg-bar {
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 8px; /* Thicker track */
+      background: var(--surface-hover);
+      border-radius: 4px;
+      top: 50%;
+      transform: translateY(-50%);
+      /* overflow: hidden; Removed to allow inner rounded corners to be distinct if needed */
+    }
+
+    /* The colored segment representing the issue duration */
+    .duration-segment {
+      position: absolute;
+      height: 100%; /* Fill the track height */
+      background: var(--success);
+      border-radius: 4px; /* Matches track radius for fully rounded look */
+      top: 0;
+      opacity: 0.8;
+    }
+
+    /* Scale Labels */
+    .scale-label {
+      position: absolute;
+      top: -15px;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+    .scale-label.start { left: 0; }
+    .scale-label.end { right: 0; }
+    
+    /* --- ACTION BUTTONS --- */
+    .action-row {
+      display: flex;
+      justify-content: flex-end;
+      gap: 1rem;
+      margin-top: 2rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--surface-hover);
+    }
+    
+    .btn {
+      padding: 0.75rem 1.25rem;
+      border-radius: 8px;
+      border: none;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+    
+    .btn-resolve {
+      background: var(--success);
+      color: white;
+    }
+    
+    .btn-reopen {
+      background: transparent;
+      border: 1px solid var(--surface-hover);
+      color: var(--text-muted);
+    }
+    .btn-reopen:hover { color: var(--text); border-color: var(--text); }
+
+  </style>
+</head>
+<body>
+
+  <h1>Timeline: Rounded Inner Segments</h1>
+  <p style="color: #888">Timeline segment has rounded edges inside the track.</p>
+
+  <!-- ACTIVE ISSUE -->
+  <h2>1. Active Issue (No Timeline)</h2>
+  
+  <div class="note-card active" style="padding-bottom: 2rem;">
+    <div class="header">
+      <div class="title">Left Knee <span class="status-pill">Ongoing</span></div>
+    </div>
+    <p class="desc">
+      Sharp pain on outside of knee. Started in August, flared up again in October.
+    </p>
+
+    <div class="action-row">
+      <button class="btn btn-resolve">✓ Mark as Resolved</button>
+    </div>
+  </div>
+
+
+  <!-- RESOLVED ISSUE (Single Month) -->
+  <h2>2. Resolved Issue (Single Month)</h2>
+  <p style="font-size: 0.8rem; color: #888; margin-bottom: 0.5rem">Issue: Oct 5 - Oct 25</p>
+  
+  <div class="note-card resolved" style="padding-bottom: 2rem;">
+    <div class="header">
+      <div class="title">Lower Back <span class="status-pill">Resolved</span></div>
+    </div>
+    <p class="desc">
+      Stiff lower back after heavy deadlifts.
+    </p>
+
+    <div class="timeline-wrapper">
+      <div class="month-scale-container">
+        <!-- Scale Labels -->
+        <div class="scale-label start">Oct 1</div>
+        <div class="scale-label end">Oct 31</div>
+
+        <!-- Background Bar (Full Month) -->
+        <div class="month-bg-bar">
+          <!-- Issue Duration (Oct 5 - Oct 25) -->
+          <div class="duration-segment" style="left: 16%; width: 64%;"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="action-row">
+      <button class="btn btn-reopen">↺ Re-open Issue</button>
+    </div>
+  </div>
+
+
+  <!-- RESOLVED ISSUE (Multi Month) -->
+  <h2>3. Resolved Issue (Multi Month)</h2>
+  <p style="font-size: 0.8rem; color: #888; margin-bottom: 0.5rem">Issue: Sep 20 - Nov 10</p>
+  
+  <div class="note-card resolved" style="padding-bottom: 2rem;">
+    <div class="header">
+      <div class="title">Right Shoulder <span class="status-pill">Resolved</span></div>
+    </div>
+    <p class="desc">
+      Rotator cuff irritation.
+    </p>
+
+    <div class="timeline-wrapper">
+      <div class="month-scale-container">
+        <!-- Scale Labels -->
+        <div class="scale-label start">Sep 1</div>
+        <div class="scale-label end">Nov 30</div>
+
+        <!-- Background Bar (3 Months) -->
+        <div class="month-bg-bar">
+          <!-- Issue Duration (Sep 20 [~22%] - Nov 10 [~78%]) -->
+          <div class="duration-segment" style="left: 22%; width: 56%;"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="action-row">
+      <button class="btn btn-reopen">↺ Re-open Issue</button>
+    </div>
+  </div>
+
+</body>
+</html>

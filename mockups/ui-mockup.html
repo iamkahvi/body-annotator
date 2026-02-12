@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Body Log - UI Concept</title>
+  <style>
+    /* Borrowing core vars from your existing styles.css */
+    :root {
+      --bg: #1a1a1a;
+      --surface: #2a2a2a;
+      --surface-hover: #3a3a3a;
+      --text: #f0f0f0;
+      --text-muted: #888;
+      --accent: #4a9eff;
+      --accent-hover: #3a8eef;
+      --danger: #ff4a4a;
+      --success: #4caf50;
+      --warning: #ff9800;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 2rem;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    h2 {
+      border-bottom: 1px solid var(--surface-hover);
+      padding-bottom: 0.5rem;
+      margin-bottom: 1.5rem;
+      margin-top: 2rem;
+      font-weight: 300;
+      color: var(--text-muted);
+    }
+
+    /* --- LIST VIEW MOCKUPS --- */
+    .note-card {
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+      border-left: 4px solid transparent;
+      cursor: default;
+    }
+
+    .note-card.ongoing {
+      border-left-color: var(--warning);
+      background: linear-gradient(90deg, rgba(255,152,0,0.05) 0%, var(--surface) 100%);
+    }
+
+    .note-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 0.5rem;
+    }
+
+    .note-title {
+      font-weight: 600;
+      font-size: 1.1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .status-badge {
+      font-size: 0.7rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 700;
+    }
+
+    .status-badge.ongoing {
+      background: rgba(255, 152, 0, 0.2);
+      color: var(--warning);
+    }
+
+    .status-badge.recurrent {
+      background: rgba(74, 158, 255, 0.2);
+      color: var(--accent);
+    }
+
+    .note-meta {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      text-align: right;
+    }
+
+    .note-desc {
+      color: var(--text);
+      line-height: 1.5;
+      margin-top: 0.5rem;
+    }
+
+    /* --- EDIT MODAL MOCKUP --- */
+    .mock-modal {
+      background: var(--surface);
+      border-radius: 16px;
+      padding: 1.5rem;
+      border: 1px solid var(--surface-hover);
+      box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    }
+
+    .field-label {
+      display: block;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-bottom: 0.5rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    input[type="text"], textarea, input[type="date"] {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid var(--surface-hover);
+      border-radius: 8px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.95rem;
+    }
+
+    /* Timeline Visualization */
+    .timeline {
+      margin-top: 1.5rem;
+      border-top: 1px solid var(--surface-hover);
+      padding-top: 1rem;
+    }
+
+    .timeline-item {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 0.5rem 0;
+      font-size: 0.9rem;
+    }
+
+    .timeline-date {
+      color: var(--text-muted);
+      min-width: 120px;
+      font-variant-numeric: tabular-nums;
+    }
+    
+    .timeline-bar-container {
+      flex: 1;
+      height: 6px;
+      background: var(--surface-hover);
+      border-radius: 3px;
+      position: relative;
+    }
+    
+    .timeline-bar {
+      position: absolute;
+      height: 100%;
+      background: var(--accent);
+      border-radius: 3px;
+      opacity: 0.7;
+    }
+
+    .timeline-duration {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      min-width: 60px;
+      text-align: right;
+    }
+
+    .timeline-ongoing {
+      color: var(--warning);
+      font-weight: 500;
+    }
+
+    .btn {
+      background: var(--accent);
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 1rem;
+      width: 100%;
+    }
+
+    .helper-text {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 0.25rem;
+    }
+
+    /* Toggle Switch */
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+    .toggle-box {
+      width: 16px; 
+      height: 16px; 
+      border: 2px solid var(--text-muted); 
+      border-radius: 4px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .toggle-row.checked .toggle-box {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+    .toggle-row.checked .toggle-box::after {
+      content: '✔';
+      font-size: 10px;
+      color: white;
+    }
+
+  </style>
+</head>
+<body>
+
+  <h1>UI Concepts: Duration vs Frequency</h1>
+  <p style="color: #888; margin-bottom: 2rem;">Resolving the difference between "I hurt my knee 3 times" and "My knee hurt for 3 days".</p>
+
+  <!-- LIST VIEW CONCEPTS -->
+  <h2>1. List View Cards</h2>
+
+  <!-- Case A: Currently Active -->
+  <div class="note-card ongoing">
+    <div class="note-header">
+      <div class="note-title">
+        Left Knee
+        <span class="status-badge ongoing">Ongoing</span>
+      </div>
+      <div class="note-meta">
+        Started: Oct 24<br>
+        (5 days ago)
+      </div>
+    </div>
+    <div class="note-desc">
+      Sharp pain on the outside of the knee when descending stairs. Feeling unstable.
+    </div>
+  </div>
+
+  <!-- Case B: Recurring Injury -->
+  <div class="note-card">
+    <div class="note-header">
+      <div class="note-title">
+        Lower Back
+        <span class="status-badge recurrent">3 Episodes</span>
+      </div>
+      <div class="note-meta">
+        Last: 2 months ago<br>
+        Duration: 4 days
+      </div>
+    </div>
+    <div class="note-desc">
+      Stiff lower back after heavy deadlifts. Radiating slightly to the left glute.
+    </div>
+  </div>
+
+  <!-- Case C: Simple One-off -->
+  <div class="note-card">
+    <div class="note-header">
+      <div class="note-title">
+        Right Index Finger
+      </div>
+      <div class="note-meta">
+        Aug 12, 2023<br>
+        (Healed)
+      </div>
+    </div>
+    <div class="note-desc">
+      Jammed it playing basketball. Swollen for 2 days.
+    </div>
+  </div>
+
+
+  <!-- EDIT MODAL CONCEPT -->
+  <h2>2. Add/Edit Modal</h2>
+  
+  <div class="mock-modal">
+    <h3 style="margin-top:0">Edit: Left Knee</h3>
+    
+    <label class="field-label">Description</label>
+    <textarea rows="3">Sharp pain on the outside of the knee when descending stairs. Feeling unstable.</textarea>
+    
+    <br><br>
+    
+    <div style="background: rgba(255,255,255,0.03); padding: 1rem; border-radius: 8px;">
+      <label class="field-label" style="color: var(--accent);">Update Status</label>
+      
+      <div class="input-row">
+        <div style="flex:1">
+          <label class="helper-text">Start Date</label>
+          <input type="date" value="2023-10-24">
+        </div>
+        <div style="flex:1">
+          <label class="helper-text">End Date</label>
+          <input type="date" disabled placeholder="---">
+        </div>
+      </div>
+      
+      <div class="toggle-row checked">
+        <span class="toggle-box"></span>
+        <span>Ongoing (Still occurring)</span>
+      </div>
+    </div>
+
+    <div class="timeline">
+      <label class="field-label">History (Episodes)</label>
+      
+      <!-- History Item 1: Ongoing -->
+      <div class="timeline-item">
+        <div class="timeline-date">Oct 24 - Now</div>
+        <div class="timeline-bar-container">
+          <div class="timeline-bar" style="width: 100%; background: var(--warning);"></div>
+        </div>
+        <div class="timeline-duration timeline-ongoing">5 days</div>
+      </div>
+
+      <!-- History Item 2: Range -->
+      <div class="timeline-item">
+        <div class="timeline-date">Sep 10 - Sep 12</div>
+        <div class="timeline-bar-container">
+          <div class="timeline-bar" style="width: 40%; left: 20%;"></div>
+        </div>
+        <div class="timeline-duration">3 days</div>
+      </div>
+
+      <!-- History Item 3: Point -->
+      <div class="timeline-item">
+        <div class="timeline-date">Aug 05</div>
+        <div class="timeline-bar-container">
+          <div class="timeline-bar" style="width: 5px; left: 0;"></div>
+        </div>
+        <div class="timeline-duration">1 day</div>
+      </div>
+
+    </div>
+
+    <button class="btn">Save Changes</button>
+  </div>
+
+</body>
+</html>
