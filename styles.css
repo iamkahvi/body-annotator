@@ -57,15 +57,10 @@ main {
 
 .body-3d-container {
   width: 100%;
-  max-width: 350px;
-  height: 400px;
+  max-width: 500px;
   border-radius: 12px;
   overflow: hidden;
-  cursor: grab;
-}
-
-.body-3d-container:active {
-  cursor: grabbing;
+  background: var(--bg);
 }
 
 .hint {
@@ -310,7 +305,7 @@ main {
   }
 
   .body-3d-container {
-    height: 500px;
+    max-width: 500px;
   }
 
   .notes-section {

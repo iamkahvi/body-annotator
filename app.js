@@ -1,4 +1,4 @@
-import { init3DBody, updateBodyHighlights3D } from './body3d.js';
+import { initSVGBody, updateBodyHighlightsSVG } from './body-svg.js';
 
 const STORAGE_KEY = 'body-annotator-notes';
 
@@ -38,17 +38,17 @@ const filterPartSelect = document.getElementById('filter-part');
 // Initialize
 function init() {
   loadNotes();
-  setup3DBody();
+  setupBody();
   setupModalListeners();
   setupFilterListeners();
   populateFilterDropdown();
   renderNotes();
 }
 
-// 3D Body setup
-function setup3DBody() {
+// SVG Body setup
+function setupBody() {
   const container = document.getElementById('body-3d-container');
-  init3DBody(container, (partName) => {
+  initSVGBody(container, (partName) => {
     selectedPart = partName;
     openModal();
   });
@@ -195,7 +195,7 @@ function getFilteredNotes() {
 
 // Body part highlighting
 function updateBodyHighlights() {
-  updateBodyHighlights3D(notes);
+  updateBodyHighlightsSVG(notes);
 }
 
 // Rendering
