@@ -29,13 +29,12 @@ const modal = document.getElementById('modal');
 const modalTitle = document.getElementById('modal-title');
 const modalPartName = document.getElementById('modal-part-name');
 const noteText = document.getElementById('note-text');
-const noteDate = document.getElementById('note-date');
+const noteStartDate = document.getElementById('note-start-date');
+const noteEndDate = document.getElementById('note-end-date');
 const saveBtn = document.getElementById('save-btn');
-const renewBtn = document.getElementById('renew-btn');
+const resolveBtn = document.getElementById('resolve-btn');
 const closeModalBtn = document.getElementById('close-modal-btn');
 const deleteBtn = document.getElementById('delete-btn');
-const occurrencesList = document.getElementById('occurrences-list');
-const occurrencesSection = document.getElementById('occurrences-section');
 const notesList = document.getElementById('notes-list');
 const searchInput = document.getElementById('search');
 const sortSelect = document.getElementById('sort');
@@ -64,13 +63,35 @@ function setupBody() {
 function loadNotes() {
   const stored = localStorage.getItem(STORAGE_KEY);
   notes = stored ? JSON.parse(stored) : [];
-  // Migrate old notes: timestamp → createdAt + occurrences
+  // Migrate old notes: occurrences/timestamp/createdAt → startDate/endDate
   let migrated = false;
   notes.forEach(note => {
-    if (note.timestamp && !note.occurrences) {
-      note.createdAt = note.timestamp;
-      note.occurrences = [note.timestamp];
+    if (note.occurrences && note.occurrences.length) {
+      const start = Math.min(...note.occurrences);
+      const end = Math.max(...note.occurrences);
+      note.startDate = start;
+      note.endDate = end;
+      delete note.occurrences;
+      delete note.createdAt;
+      migrated = true;
+    }
+
+    if (note.timestamp && !note.startDate) {
+      note.startDate = note.timestamp;
+      note.endDate = note.timestamp;
       delete note.timestamp;
+      migrated = true;
+    }
+
+    if (note.createdAt && !note.startDate) {
+      note.startDate = note.createdAt;
+      note.endDate = note.createdAt;
+      delete note.createdAt;
+      migrated = true;
+    }
+
+    if (note.startDate && typeof note.endDate === 'undefined') {
+      note.endDate = note.startDate;
       migrated = true;
     }
   });
@@ -81,43 +102,31 @@ function saveNotes() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(notes));
 }
 
-/** Most recent occurrence timestamp for a note */
-function latestOccurrence(note) {
-  return Math.max(...note.occurrences);
-}
-
 // Modal
 function openModal(existingNote = null) {
   if (existingNote) {
+    const isOngoing = existingNote.endDate == null;
     editingNoteId = existingNote.id;
     selectedPart = existingNote.bodyPart;
-    noteDate.value = new Date().toISOString().split('T')[0];
+    noteStartDate.value = toDateInputValue(existingNote.startDate);
+    noteEndDate.value = isOngoing ? '' : toDateInputValue(existingNote.endDate);
     noteText.value = existingNote.description;
     deleteBtn.classList.remove('hidden');
-    renewBtn.classList.remove('hidden');
+    resolveBtn.classList.toggle('hidden', !isOngoing);
     modalTitle.textContent = 'Edit Note';
-    renderOccurrences(existingNote);
-    occurrencesSection.classList.remove('hidden');
   } else {
     editingNoteId = null;
-    noteDate.value = new Date().toISOString().split('T')[0];
+    const today = new Date().toISOString().split('T')[0];
+    noteStartDate.value = today;
+    noteEndDate.value = '';
     noteText.value = '';
     deleteBtn.classList.add('hidden');
-    renewBtn.classList.add('hidden');
+    resolveBtn.classList.add('hidden');
     modalTitle.textContent = 'Add Note';
-    occurrencesSection.classList.add('hidden');
   }
   modalPartName.textContent = formatPartName(selectedPart);
   modal.classList.remove('hidden');
   noteText.focus();
-}
-
-function renderOccurrences(note) {
-  const sorted = [...note.occurrences].sort((a, b) => b - a);
-  occurrencesList.innerHTML = sorted.map(ts => {
-    const d = new Date(ts);
-    return `<li>${d.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}</li>`;
-  }).join('');
 }
 
 function closeModal() {
@@ -131,23 +140,32 @@ function setupModalListeners() {
 
   saveBtn.addEventListener('click', () => {
     const text = noteText.value.trim();
-    if (!text || !selectedPart) return;
+    const startValue = noteStartDate.value;
+    const endValue = noteEndDate.value;
+    if (!text || !selectedPart || !startValue) return;
 
-    const selectedDate = new Date(noteDate.value + 'T12:00:00');
+    const startTs = new Date(startValue + 'T12:00:00').getTime();
+    const endTs = endValue
+      ? new Date(endValue + 'T12:00:00').getTime()
+      : null;
+
+    if (Number.isNaN(startTs)) return;
+    if (endTs !== null && (Number.isNaN(endTs) || endTs < startTs)) return;
 
     if (editingNoteId) {
       const note = notes.find(n => n.id === editingNoteId);
       if (note) {
         note.bodyPart = selectedPart;
+        note.startDate = startTs;
+        note.endDate = endTs;
         note.description = text;
       }
     } else {
-      const ts = selectedDate.getTime();
       const note = {
         id: crypto.randomUUID(),
         bodyPart: selectedPart,
-        createdAt: ts,
-        occurrences: [ts],
+        startDate: startTs,
+        endDate: endTs,
         description: text
       };
       notes.unshift(note);
@@ -158,29 +176,18 @@ function setupModalListeners() {
     closeModal();
   });
 
-  renewBtn.addEventListener('click', () => {
+  resolveBtn.addEventListener('click', () => {
     if (!editingNoteId) return;
     const note = notes.find(n => n.id === editingNoteId);
     if (!note) return;
 
-    const renewDate = new Date(noteDate.value + 'T12:00:00').getTime();
+    const today = new Date().toISOString().split('T')[0];
+    const endTs = new Date(today + 'T12:00:00').getTime();
+    note.endDate = endTs;
 
-    // Don't add duplicate dates (same day)
-    const renewDay = new Date(renewDate).toDateString();
-    const alreadyExists = note.occurrences.some(
-      ts => new Date(ts).toDateString() === renewDay
-    );
-    if (alreadyExists) {
-      // Briefly flash the occurrences list to indicate it's already there
-      occurrencesSection.style.outline = '2px solid var(--accent)';
-      setTimeout(() => { occurrencesSection.style.outline = ''; }, 600);
-      return;
-    }
-
-    note.occurrences.push(renewDate);
     saveNotes();
-    renderOccurrences(note);
     renderNotes();
+    closeModal();
   });
 
   modal.addEventListener('click', (e) => {
@@ -221,6 +228,7 @@ function getFilteredNotes() {
   const search = searchInput.value.toLowerCase();
   const filterPart = filterPartSelect.value;
   const sort = sortSelect.value;
+  const now = Date.now();
 
   let filtered = [...notes];
 
@@ -237,10 +245,10 @@ function getFilteredNotes() {
 
   switch (sort) {
     case 'date-desc':
-      filtered.sort((a, b) => latestOccurrence(b) - latestOccurrence(a));
+      filtered.sort((a, b) => noteSortDate(b, now) - noteSortDate(a, now));
       break;
     case 'date-asc':
-      filtered.sort((a, b) => latestOccurrence(a) - latestOccurrence(b));
+      filtered.sort((a, b) => noteSortDate(a, now) - noteSortDate(b, now));
       break;
     case 'body-part':
       filtered.sort((a, b) => a.bodyPart.localeCompare(b.bodyPart));
@@ -273,17 +281,23 @@ function renderNotes() {
   }
 
   notesList.innerHTML = filtered.map(note => {
-    const latest = latestOccurrence(note);
-    const count = note.occurrences.length;
-    const countBadge = count > 1 ? `<span class="occurrence-count">${count}x</span>` : '';
+    const dateRange = formatDateRange(note.startDate, note.endDate);
+    const durationLabel = formatDuration(note.startDate, note.endDate);
+    const statusLabel = note.endDate == null ? 'Ongoing' : 'Resolved';
+    const statusClass = note.endDate == null ? 'note-status--ongoing' : 'note-status--resolved';
 
     return `
       <div class="note-card" data-id="${note.id}">
         <div class="note-header">
-          <span class="note-part">${formatPartName(note.bodyPart)} ${countBadge}</span>
-          <span class="note-date">${formatDate(latest)}</span>
+          <div class="note-meta">
+            <span class="note-part">${formatPartName(note.bodyPart)}</span>
+            <span class="note-status ${statusClass}">${statusLabel}</span>
+          </div>
+          <span class="note-date">${dateRange}</span>
         </div>
-        <p class="note-text">${escapeHtml(note.description)}</p>
+        <div class="note-submeta">
+          <span class="note-duration">Duration: ${durationLabel}</span>
+        </div>
       </div>
     `;
   }).join('');
@@ -303,24 +317,42 @@ function deleteNote(id) {
 }
 
 // Utilities
+function noteSortDate(note, now) {
+  if (note.endDate == null) return now;
+  return note.endDate ?? note.startDate ?? 0;
+}
+
 function formatPartName(part) {
   return part.replace(/_/g, ' ');
 }
 
-function formatDate(timestamp) {
-  const date = new Date(timestamp);
-  const now = new Date();
-  const diffDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
+function toDateInputValue(timestamp) {
+  if (!timestamp) return '';
+  return new Date(timestamp).toISOString().split('T')[0];
+}
 
-  if (diffDays === 0) {
-    return 'Today';
-  } else if (diffDays === 1) {
-    return 'Yesterday';
-  } else if (diffDays < 7) {
-    return date.toLocaleDateString([], { weekday: 'short' });
-  } else {
-    return date.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
-  }
+function formatShortDate(timestamp) {
+  return new Date(timestamp).toLocaleDateString([], {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  });
+}
+
+function formatDateRange(startTs, endTs) {
+  if (!startTs) return '';
+  if (endTs == null) return `${formatShortDate(startTs)} - now`;
+  if (startTs === endTs) return formatShortDate(startTs);
+  return `${formatShortDate(startTs)} - ${formatShortDate(endTs)}`;
+}
+
+function formatDuration(startTs, endTs) {
+  if (!startTs) return '';
+  const end = endTs == null ? Date.now() : endTs;
+  const msPerDay = 24 * 60 * 60 * 1000;
+  const days = Math.floor((end - startTs) / msPerDay) + 1;
+  if (days <= 1) return '1 day';
+  return `${days} days`;
 }
 
 function escapeHtml(text) {

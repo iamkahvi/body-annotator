@@ -28,6 +28,11 @@
             <option value="date-asc">Oldest first</option>
             <option value="body-part">By body part</option>
           </select>
+          <select id="filter-status">
+            <option value="all">All Status</option>
+            <option value="active">Active Only</option>
+            <option value="resolved">Resolved Only</option>
+          </select>
           <select id="filter-part">
             <option value="">All body parts</option>
           </select>
@@ -42,17 +47,30 @@
         <button id="close-modal-btn" class="modal-close">&times;</button>
         <h2 id="modal-title">Add Note</h2>
         <p class="selected-part">Selected: <strong id="modal-part-name"></strong></p>
-        <label class="field-label" for="note-date">Date</label>
-        <input type="date" id="note-date" />
+        <label class="field-label" for="note-start-date">Start date</label>
+        <input type="date" id="note-start-date" />
+        <label class="field-label" for="note-end-date">End date</label>
+        <input type="date" id="note-end-date" />
         <label class="field-label" for="note-text">Description</label>
         <textarea id="note-text" placeholder="Describe the sensation or injury..." rows="4"></textarea>
-        <div id="occurrences-section" class="occurrences-section hidden">
-          <label class="field-label">Occurrences</label>
-          <ul id="occurrences-list" class="occurrences-list"></ul>
+        <!-- Timeline -->
+        <div id="timeline-section" class="timeline-section hidden">
+          <label class="field-label">Timeline</label>
+          <div id="timeline-container" class="timeline-container">
+            <!-- Canvas for drawing the timeline -->
+            <canvas id="timeline-canvas"></canvas>
+          </div>
+          <div class="timeline-stats">
+            <span id="timeline-start"></span>
+            <span id="timeline-duration"></span>
+          </div>
         </div>
+
         <div class="modal-actions">
+          <button id="resolve-btn" class="btn-success hidden">✓ Resolve</button>
+          <button id="reopen-btn" class="btn-secondary hidden">↺ Re-open</button>
+          <div class="spacer"></div>
           <button id="delete-btn" class="btn-danger hidden">Delete</button>
-          <button id="renew-btn" class="btn-secondary hidden">Renew</button>
           <button id="save-btn" class="btn-primary">Save</button>
         </div>
       </div>

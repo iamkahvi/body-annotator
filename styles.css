@@ -121,8 +121,15 @@ main {
 .note-header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 0.5rem;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.note-meta {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
 .note-part {
@@ -131,8 +138,38 @@ main {
   text-transform: capitalize;
 }
 
+.note-status {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.15rem 0.4rem;
+  border-radius: 999px;
+  background: var(--surface-hover);
+  color: var(--text-muted);
+}
+
+.note-status--ongoing {
+  color: #f5b35c;
+  border: 1px solid rgba(245, 179, 92, 0.4);
+}
+
+.note-status--resolved {
+  color: #7fe29e;
+  border: 1px solid rgba(127, 226, 158, 0.4);
+}
+
 .note-date {
   font-size: 0.75rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.note-submeta {
+  margin-top: 0.35rem;
+}
+
+.note-duration {
+  font-size: 0.7rem;
   color: var(--text-muted);
 }
 
@@ -254,39 +291,6 @@ main {
   letter-spacing: 0.05em;
 }
 
-.occurrences-section {
-  margin-top: 0.75rem;
-  border-radius: 8px;
-  transition: outline 0.15s;
-}
-
-.occurrences-list {
-  list-style: none;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.375rem;
-  max-height: 120px;
-  overflow-y: auto;
-}
-
-.occurrences-list li {
-  background: var(--bg);
-  padding: 0.25rem 0.5rem;
-  border-radius: 6px;
-  font-size: 0.8125rem;
-  color: var(--text-muted);
-}
-
-.occurrence-count {
-  font-size: 0.75rem;
-  font-weight: 400;
-  color: var(--text-muted);
-  background: var(--surface-hover);
-  padding: 0.125rem 0.375rem;
-  border-radius: 4px;
-  margin-left: 0.375rem;
-  vertical-align: middle;
-}
 
 .modal-actions {
   display: flex;
@@ -296,7 +300,8 @@ main {
 
 .btn-primary,
 .btn-secondary,
-.btn-danger {
+.btn-danger,
+.btn-success {
   flex: 1;
   padding: 0.875rem;
   border: none;
@@ -332,6 +337,15 @@ main {
 
 .btn-danger:hover {
   background: #e03a3a;
+}
+
+.btn-success {
+  background: #2ecc71;
+  color: white;
+}
+
+.btn-success:hover {
+  background: #27b864;
 }
 
 /* Responsive */

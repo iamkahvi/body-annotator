@@ -284,9 +284,10 @@ export function updateBodyHighlightsSVG(notes) {
   // Most recent occurrence timestamp per body part
   const mostRecent = {};
   notes.forEach((note) => {
-    const latest = note.occurrences
-      ? Math.max(...note.occurrences)
-      : note.timestamp || 0;
+    const latest =
+      note.endDate == null && note.startDate != null
+        ? Date.now()
+        : note.endDate ?? note.startDate ?? note.timestamp ?? 0;
     if (!mostRecent[note.bodyPart] || latest > mostRecent[note.bodyPart]) {
       mostRecent[note.bodyPart] = latest;
     }
