@@ -41,6 +41,14 @@
       </section>
     </main>
 
+    <section class="data-section">
+      <div class="data-actions">
+        <button id="export-data-btn" class="btn-secondary">Export data</button>
+        <button id="import-data-btn" class="btn-secondary">Import data</button>
+      </div>
+      <p class="data-hint">Copy and paste your data to move it between devices.</p>
+    </section>
+
     <!-- Modal -->
     <div id="modal" class="modal hidden">
       <div class="modal-content">
@@ -93,6 +101,25 @@
             <div class="spacer"></div>
             <button id="delete-btn" class="btn-danger hidden">Delete</button>
             <button id="save-btn" class="btn-primary">Save</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="data-modal" class="modal hidden">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 id="data-modal-title">Export data</h2>
+          <button id="data-modal-close" class="modal-close">&times;</button>
+        </div>
+        <p id="data-modal-help" class="data-modal-help"></p>
+        <textarea id="data-textarea" class="data-textarea" rows="8" spellcheck="false"></textarea>
+        <p id="data-status" class="data-status" aria-live="polite"></p>
+        <div class="modal-actions">
+          <div class="modal-actions-row">
+            <button id="data-copy-btn" class="btn-secondary">Copy</button>
+            <div class="spacer"></div>
+            <button id="data-action-btn" class="btn-primary">Import</button>
           </div>
         </div>
       </div>
