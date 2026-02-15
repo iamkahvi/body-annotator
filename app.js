@@ -40,6 +40,7 @@ const modalActionsDisplay = document.getElementById('modal-actions-display');
 const modalActionsEdit = document.getElementById('modal-actions-edit');
 const saveBtn = document.getElementById('save-btn');
 const resolveBtn = document.getElementById('resolve-btn');
+const markOngoingBtn = document.getElementById('mark-ongoing-btn');
 const editBtn = document.getElementById('edit-btn');
 const cancelEditBtn = document.getElementById('cancel-edit-btn');
 const closeModalBtn = document.getElementById('close-modal-btn');
@@ -130,14 +131,14 @@ function openModal(existingNote = null) {
     selectedPart = existingNote.bodyPart;
     populateEditFields(existingNote);
     populateDisplayFields(existingNote);
-    setModalMode('display', { isNew: false, isOngoing });
+    setModalMode('display', { isNew: false, isOngoing, isResolved: !isOngoing });
   } else {
     editingNoteId = null;
     const today = new Date().toISOString().split('T')[0];
     noteStartDate.value = today;
     noteEndDate.value = '';
     noteText.value = '';
-    setModalMode('edit', { isNew: true, isOngoing: false });
+    setModalMode('edit', { isNew: true, isOngoing: false, isResolved: false });
   }
   modal.classList.remove('hidden');
   if (modalEdit.classList.contains('hidden')) return;
@@ -156,13 +157,14 @@ function populateDisplayFields(note) {
   displayDescription.textContent = note.description;
 }
 
-function setModalMode(mode, { isNew = false, isOngoing = false } = {}) {
+function setModalMode(mode, { isNew = false, isOngoing = false, isResolved = false } = {}) {
   const isDisplay = mode === 'display';
   modalDisplay.classList.toggle('hidden', !isDisplay);
   modalEdit.classList.toggle('hidden', isDisplay);
   modalActionsDisplay.classList.toggle('hidden', !isDisplay);
   modalActionsEdit.classList.toggle('hidden', isDisplay);
   resolveBtn.classList.toggle('hidden', !isDisplay || !isOngoing);
+  markOngoingBtn.classList.toggle('hidden', !isDisplay || !isResolved);
   editBtn.classList.toggle('hidden', !isDisplay);
   deleteBtn.classList.toggle('hidden', isNew);
   cancelEditBtn.classList.toggle('hidden', isNew);
@@ -232,6 +234,18 @@ function setupModalListeners() {
     closeModal();
   });
 
+  markOngoingBtn.addEventListener('click', () => {
+    if (!editingNoteId) return;
+    const note = notes.find(n => n.id === editingNoteId);
+    if (!note) return;
+
+    note.endDate = null;
+
+    saveNotes();
+    renderNotes();
+    closeModal();
+  });
+
   editBtn.addEventListener('click', () => {
     if (!editingNoteId) return;
     const note = notes.find(n => n.id === editingNoteId);
@@ -254,8 +268,9 @@ function setupModalListeners() {
       return;
     }
 
+    const isOngoing = note.endDate == null;
     populateDisplayFields(note);
-    setModalMode('display', { isNew: false, isOngoing: note.endDate == null });
+    setModalMode('display', { isNew: false, isOngoing, isResolved: !isOngoing });
   });
 
   modal.addEventListener('click', (e) => {
