@@ -11,4 +11,4 @@ Notes are stored in `localStorage` under `body-annotator-notes`.
 ## Built With
 - Vanilla JavaScript
 - SVG body map (front/back)
-- Optional Three.js body renderer (`site/body3d.js`)
+- Optional Three.js body renderer (`site/body3d.js`, models in `/models`)

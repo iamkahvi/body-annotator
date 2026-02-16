@@ -7,4 +7,4 @@
 .wrangler/
 node_modules/
 *.log
-site/models/*.glb
+models/*.glb

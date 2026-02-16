@@ -2,7 +2,7 @@
   "activeModel": "default",
   "models": {
     "default": {
-      "path": "models/body.glb",
+      "path": "../models/body.glb",
       "meshNameMap": {
         "Object_3": "butt",
         "Object_5": "shoulders",

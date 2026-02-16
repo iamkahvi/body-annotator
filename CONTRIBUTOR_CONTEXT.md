@@ -27,7 +27,7 @@ Canonical body parts are defined in `site/app.js` (`BODY_PARTS`). SVG front/back
   - Calls `updateBodyHighlightsSVG` to color body parts by recency.
 - `site/body-svg.js`: renders a front/back SVG body; wires click/hover and highlight logic.
 - `site/body3d.js`: optional Three.js body model renderer (not currently wired in `app.js`).
-  - Reads `site/body-models.json` for model path + mesh name mapping.
+  - Reads `site/body-models.json` for model path + mesh name mapping (models live in `/models`).
   - Falls back to a procedural body if model load fails.
 
 ## Highlighting behavior
