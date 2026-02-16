@@ -320,9 +320,10 @@ let resizeObserver = null;
 // ── Geometry helpers ─────────────────────────────────────────────────
 
 function createHalfSphereGeometry(radius, side, segments = 16) {
-  // In Three.js SphereGeometry, phi is the horizontal angle around Y.
-  // phi=0 faces +Z. We want front half = contains +Z surface.
-  const phiStart = side === 'front' ? -Math.PI / 2 : Math.PI / 2;
+  // Three.js SphereGeometry phi: at phi=0 surface is at -X, phi=PI/2 is +Z.
+  // Front half (contains +Z): phiStart=0, phiLength=PI sweeps -X → +Z → +X.
+  // Back half (contains -Z): phiStart=PI, phiLength=PI sweeps +X → -Z → -X.
+  const phiStart = side === 'front' ? 0 : Math.PI;
   const phiLength = Math.PI;
   return new THREE.SphereGeometry(
     radius,
