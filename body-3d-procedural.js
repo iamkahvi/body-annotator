@@ -3,7 +3,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 // ── Constants ────────────────────────────────────────────────────────
 
-const PART_COLOR = 0x4a4a4a;
+const PART_COLOR = 0x808080;
 const HOVER_COLOR = 0x5ab0ff;
 const HIGHLIGHT_COLOR_HEX = '#e06030';
 const BG_COLOR = 0x1a1a1a;
