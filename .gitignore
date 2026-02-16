@@ -1,0 +1,10 @@
+.DS_Store
+*.blend
+*.blend1
+*.blend2
+*.blend@
+*.blend?
+.wrangler/
+node_modules/
+*.log
+models/*.glb

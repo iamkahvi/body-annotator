@@ -1,4 +1,4 @@
-import { initSVGBody, updateBodyHighlightsSVG } from './body-svg.js';
+import { initBody3D, updateBodyHighlights3D } from './body-3d-procedural.js';
 
 const STORAGE_KEY = 'body-annotator-notes';
 
@@ -23,6 +23,7 @@ const BODY_PARTS = [
 let notes = [];
 let selectedPart = null;
 let editingNoteId = null;
+let dataMode = 'export';
 
 // DOM elements
 const modal = document.getElementById('modal');
@@ -39,6 +40,7 @@ const modalActionsDisplay = document.getElementById('modal-actions-display');
 const modalActionsEdit = document.getElementById('modal-actions-edit');
 const saveBtn = document.getElementById('save-btn');
 const resolveBtn = document.getElementById('resolve-btn');
+const markOngoingBtn = document.getElementById('mark-ongoing-btn');
 const editBtn = document.getElementById('edit-btn');
 const cancelEditBtn = document.getElementById('cancel-edit-btn');
 const closeModalBtn = document.getElementById('close-modal-btn');
@@ -47,6 +49,16 @@ const notesList = document.getElementById('notes-list');
 const searchInput = document.getElementById('search');
 const sortSelect = document.getElementById('sort');
 const filterPartSelect = document.getElementById('filter-part');
+const exportDataBtn = document.getElementById('export-data-btn');
+const importDataBtn = document.getElementById('import-data-btn');
+const dataModal = document.getElementById('data-modal');
+const dataModalTitle = document.getElementById('data-modal-title');
+const dataModalHelp = document.getElementById('data-modal-help');
+const dataTextarea = document.getElementById('data-textarea');
+const dataStatus = document.getElementById('data-status');
+const dataModalClose = document.getElementById('data-modal-close');
+const dataCopyBtn = document.getElementById('data-copy-btn');
+const dataActionBtn = document.getElementById('data-action-btn');
 
 // Initialize
 function init() {
@@ -54,6 +66,7 @@ function init() {
   setupBody();
   setupModalListeners();
   setupFilterListeners();
+  setupDataTransferListeners();
   populateFilterDropdown();
   renderNotes();
 }
@@ -61,7 +74,7 @@ function init() {
 // SVG Body setup
 function setupBody() {
   const container = document.getElementById('body-3d-container');
-  initSVGBody(container, (partName) => {
+  initBody3D(container, (partName) => {
     selectedPart = partName;
     openModal();
   });
@@ -118,14 +131,14 @@ function openModal(existingNote = null) {
     selectedPart = existingNote.bodyPart;
     populateEditFields(existingNote);
     populateDisplayFields(existingNote);
-    setModalMode('display', { isNew: false, isOngoing });
+    setModalMode('display', { isNew: false, isOngoing, isResolved: !isOngoing });
   } else {
     editingNoteId = null;
     const today = new Date().toISOString().split('T')[0];
     noteStartDate.value = today;
     noteEndDate.value = '';
     noteText.value = '';
-    setModalMode('edit', { isNew: true, isOngoing: false });
+    setModalMode('edit', { isNew: true, isOngoing: false, isResolved: false });
   }
   modal.classList.remove('hidden');
   if (modalEdit.classList.contains('hidden')) return;
@@ -144,13 +157,14 @@ function populateDisplayFields(note) {
   displayDescription.textContent = note.description;
 }
 
-function setModalMode(mode, { isNew = false, isOngoing = false } = {}) {
+function setModalMode(mode, { isNew = false, isOngoing = false, isResolved = false } = {}) {
   const isDisplay = mode === 'display';
   modalDisplay.classList.toggle('hidden', !isDisplay);
   modalEdit.classList.toggle('hidden', isDisplay);
   modalActionsDisplay.classList.toggle('hidden', !isDisplay);
   modalActionsEdit.classList.toggle('hidden', isDisplay);
   resolveBtn.classList.toggle('hidden', !isDisplay || !isOngoing);
+  markOngoingBtn.classList.toggle('hidden', !isDisplay || !isResolved);
   editBtn.classList.toggle('hidden', !isDisplay);
   deleteBtn.classList.toggle('hidden', isNew);
   cancelEditBtn.classList.toggle('hidden', isNew);
@@ -220,6 +234,18 @@ function setupModalListeners() {
     closeModal();
   });
 
+  markOngoingBtn.addEventListener('click', () => {
+    if (!editingNoteId) return;
+    const note = notes.find(n => n.id === editingNoteId);
+    if (!note) return;
+
+    note.endDate = null;
+
+    saveNotes();
+    renderNotes();
+    closeModal();
+  });
+
   editBtn.addEventListener('click', () => {
     if (!editingNoteId) return;
     const note = notes.find(n => n.id === editingNoteId);
@@ -242,8 +268,9 @@ function setupModalListeners() {
       return;
     }
 
+    const isOngoing = note.endDate == null;
     populateDisplayFields(note);
-    setModalMode('display', { isNew: false, isOngoing: note.endDate == null });
+    setModalMode('display', { isNew: false, isOngoing, isResolved: !isOngoing });
   });
 
   modal.addEventListener('click', (e) => {
@@ -258,10 +285,170 @@ function setupModalListeners() {
   });
 
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
-      closeModal();
+    if (e.key === 'Escape') {
+      if (!modal.classList.contains('hidden')) closeModal();
+      if (!dataModal.classList.contains('hidden')) closeDataModal();
     }
   });
+}
+
+function setupDataTransferListeners() {
+  exportDataBtn.addEventListener('click', () => openDataModal('export'));
+  importDataBtn.addEventListener('click', () => openDataModal('import'));
+  dataModalClose.addEventListener('click', closeDataModal);
+  dataCopyBtn.addEventListener('click', copyDataToClipboard);
+  dataActionBtn.addEventListener('click', () => {
+    if (dataMode === 'export') {
+      closeDataModal();
+      return;
+    }
+    handleImport();
+  });
+  dataModal.addEventListener('click', (e) => {
+    if (e.target === dataModal) closeDataModal();
+  });
+}
+
+function openDataModal(mode) {
+  dataMode = mode;
+  dataStatus.textContent = '';
+
+  if (mode === 'export') {
+    dataModalTitle.textContent = 'Export data';
+    dataModalHelp.textContent = 'Copy the text below and keep it somewhere safe.';
+    dataTextarea.value = JSON.stringify(getExportPayload(), null, 2);
+    dataTextarea.readOnly = true;
+    dataCopyBtn.classList.remove('hidden');
+    dataActionBtn.textContent = 'Done';
+  } else {
+    dataModalTitle.textContent = 'Import data';
+    dataModalHelp.textContent = 'Paste data from another device. This replaces your current notes.';
+    dataTextarea.value = '';
+    dataTextarea.readOnly = false;
+    dataCopyBtn.classList.add('hidden');
+    dataActionBtn.textContent = 'Import';
+  }
+
+  dataModal.classList.remove('hidden');
+  dataTextarea.focus();
+  dataTextarea.select();
+}
+
+function closeDataModal() {
+  dataModal.classList.add('hidden');
+  dataTextarea.value = '';
+  dataStatus.textContent = '';
+}
+
+function copyDataToClipboard() {
+  const text = dataTextarea.value;
+  if (!text) return;
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => {
+      dataStatus.textContent = 'Copied to clipboard.';
+    }).catch(() => {
+      dataStatus.textContent = 'Select and copy the text manually.';
+    });
+  } else {
+    dataStatus.textContent = 'Select and copy the text manually.';
+  }
+}
+
+function handleImport() {
+  const raw = dataTextarea.value.trim();
+  if (!raw) {
+    dataStatus.textContent = 'Paste your data first.';
+    return;
+  }
+
+  const parsed = parseImportPayload(raw);
+  if (!parsed) {
+    dataStatus.textContent = 'That data format is not valid JSON.';
+    return;
+  }
+
+  const normalized = normalizeImportedNotes(parsed);
+  if (!normalized) {
+    dataStatus.textContent = 'No valid notes found in that data.';
+    return;
+  }
+
+  const count = normalized.length;
+  const msg = notes.length > 0
+    ? `This will replace your ${notes.length} existing note(s) with ${count} imported note(s). Continue?`
+    : `Import ${count} note(s)?`;
+  if (!confirm(msg)) return;
+
+  notes = normalized;
+  saveNotes();
+  renderNotes();
+  closeDataModal();
+}
+
+function getExportPayload() {
+  return {
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    notes
+  };
+}
+
+function parseImportPayload(raw) {
+  try {
+    return JSON.parse(raw);
+  } catch (error) {
+    return null;
+  }
+}
+
+function normalizeImportedNotes(payload) {
+  let importedNotes = null;
+
+  if (Array.isArray(payload)) {
+    importedNotes = payload;
+  } else if (payload && Array.isArray(payload.notes)) {
+    importedNotes = payload.notes;
+  }
+
+  if (!importedNotes) return null;
+
+  const normalized = importedNotes
+    .map(normalizeNote)
+    .filter(note => note);
+
+  if (normalized.length === 0) return null;
+
+  return normalized;
+}
+
+function normalizeNote(note) {
+  if (!note || typeof note !== 'object') return null;
+
+  const bodyPart = typeof note.bodyPart === 'string' ? note.bodyPart : null;
+  if (!bodyPart || !BODY_PARTS.includes(bodyPart)) return null;
+
+  const description = typeof note.description === 'string' ? note.description.trim() : '';
+  const startDate = toValidTimestamp(note.startDate);
+  const endDate = note.endDate == null ? null : toValidTimestamp(note.endDate);
+  const id = typeof note.id === 'string' ? note.id : crypto.randomUUID();
+
+  if (!description || !startDate) return null;
+
+  return {
+    id,
+    bodyPart,
+    startDate,
+    endDate,
+    description
+  };
+}
+
+function toValidTimestamp(value) {
+  const numberValue = typeof value === 'string' ? Number(value) : value;
+  if (!Number.isFinite(numberValue)) return null;
+  if (numberValue <= 0) return null;
+  return numberValue;
 }
 
 // Filtering & sorting
@@ -316,7 +503,7 @@ function getFilteredNotes() {
 
 // Body part highlighting
 function updateBodyHighlights() {
-  updateBodyHighlightsSVG(notes);
+  updateBodyHighlights3D(notes);
 }
 
 // Rendering

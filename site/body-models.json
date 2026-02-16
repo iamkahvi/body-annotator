@@ -1,0 +1,24 @@
+{
+  "activeModel": "default",
+  "models": {
+    "default": {
+      "path": "../models/body.glb",
+      "meshNameMap": {
+        "Object_3": "butt",
+        "Object_5": "shoulders",
+        "Object_7": "calves",
+        "Object_9": "hamstrings",
+        "Object_13": "back",
+        "Object_15": "head",
+        "Object_17": "quads",
+        "Object_19": "neck",
+        "Object_21": "arms",
+        "Object_23": "chest/abs",
+        "Object_25": "feet",
+        "Object_27": "groin",
+        "Object_31": "forearms",
+        "Object_33": "upper arms"
+      }
+    }
+  }
+}
