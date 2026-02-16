@@ -1,6 +1,7 @@
 import { initBody3D, updateBodyHighlights3D } from './body-3d-procedural.js';
 
 const STORAGE_KEY = 'body-annotator-notes';
+const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
 const BODY_PARTS = [
   'head', 'back_of_head', 'neck',
@@ -115,8 +116,16 @@ function loadNotes() {
       note.endDate = note.startDate;
       migrated = true;
     }
+
+    if (note.startDate && note.expiresAt == null) {
+      note.expiresAt = note.startDate + ONE_WEEK_MS;
+      migrated = true;
+    }
   });
-  if (migrated) saveNotes();
+  const now = Date.now();
+  const before = notes.length;
+  notes = notes.filter(note => !isExpired(note, now));
+  if (migrated || notes.length !== before) saveNotes();
 }
 
 function saveNotes() {
@@ -196,6 +205,9 @@ function setupModalListeners() {
     if (Number.isNaN(startTs)) return;
     if (endTs !== null && (Number.isNaN(endTs) || endTs < startTs)) return;
 
+    const now = Date.now();
+    const expiresAt = now + ONE_WEEK_MS;
+
     if (editingNoteId) {
       const note = notes.find(n => n.id === editingNoteId);
       if (note) {
@@ -203,16 +215,31 @@ function setupModalListeners() {
         note.startDate = startTs;
         note.endDate = endTs;
         note.description = text;
+        note.expiresAt = expiresAt;
       }
     } else {
-      const note = {
-        id: crypto.randomUUID(),
-        bodyPart: selectedPart,
-        startDate: startTs,
-        endDate: endTs,
-        description: text
-      };
-      notes.unshift(note);
+      const existing = notes.find(n =>
+        n.bodyPart === selectedPart &&
+        n.description === text &&
+        !isExpired(n, now)
+      );
+
+      if (existing) {
+        existing.startDate = startTs;
+        existing.endDate = endTs;
+        existing.expiresAt = expiresAt;
+        notes = [existing, ...notes.filter(n => n.id !== existing.id)];
+      } else {
+        const note = {
+          id: crypto.randomUUID(),
+          bodyPart: selectedPart,
+          startDate: startTs,
+          endDate: endTs,
+          description: text,
+          expiresAt
+        };
+        notes.unshift(note);
+      }
     }
 
     saveNotes();
@@ -228,6 +255,7 @@ function setupModalListeners() {
     const today = new Date().toISOString().split('T')[0];
     const endTs = new Date(today + 'T12:00:00').getTime();
     note.endDate = endTs;
+    note.expiresAt = Date.now() + ONE_WEEK_MS;
 
     saveNotes();
     renderNotes();
@@ -240,6 +268,7 @@ function setupModalListeners() {
     if (!note) return;
 
     note.endDate = null;
+    note.expiresAt = Date.now() + ONE_WEEK_MS;
 
     saveNotes();
     renderNotes();
@@ -390,7 +419,7 @@ function getExportPayload() {
   return {
     version: 1,
     exportedAt: new Date().toISOString(),
-    notes
+    notes: getActiveNotes()
   };
 }
 
@@ -432,6 +461,7 @@ function normalizeNote(note) {
   const startDate = toValidTimestamp(note.startDate);
   const endDate = note.endDate == null ? null : toValidTimestamp(note.endDate);
   const id = typeof note.id === 'string' ? note.id : crypto.randomUUID();
+  const expiresAt = toValidTimestamp(note.expiresAt);
 
   if (!description || !startDate) return null;
 
@@ -440,7 +470,8 @@ function normalizeNote(note) {
     bodyPart,
     startDate,
     endDate,
-    description
+    description,
+    expiresAt: expiresAt ?? (startDate + ONE_WEEK_MS)
   };
 }
 
@@ -473,7 +504,7 @@ function getFilteredNotes() {
   const sort = sortSelect.value;
   const now = Date.now();
 
-  let filtered = [...notes];
+  let filtered = getActiveNotes(now);
 
   if (filterPart) {
     filtered = filtered.filter(n => n.bodyPart === filterPart);
@@ -503,19 +534,20 @@ function getFilteredNotes() {
 
 // Body part highlighting
 function updateBodyHighlights() {
-  updateBodyHighlights3D(notes);
+  updateBodyHighlights3D(getActiveNotes());
 }
 
 // Rendering
 function renderNotes() {
   const filtered = getFilteredNotes();
+  const activeNotes = getActiveNotes();
 
   updateBodyHighlights();
 
   if (filtered.length === 0) {
     notesList.innerHTML = `
       <div class="empty-state">
-        ${notes.length === 0
+        ${activeNotes.length === 0
           ? 'No notes yet. Click a body part to add one.'
           : 'No notes match your search.'}
       </div>
@@ -557,6 +589,14 @@ function deleteNote(id) {
   notes = notes.filter(n => n.id !== id);
   saveNotes();
   renderNotes();
+}
+
+function getActiveNotes(now = Date.now()) {
+  return notes.filter(note => !isExpired(note, now));
+}
+
+function isExpired(note, now = Date.now()) {
+  return note.expiresAt != null && note.expiresAt <= now;
 }
 
 // Utilities
