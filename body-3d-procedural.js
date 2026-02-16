@@ -109,7 +109,8 @@ const PART_DEFS = [
   {
     name: 'right_upper_arm',
     type: 'cylinder',
-    pos: [-0.235, 1.24, 0],
+    pos: [-0.217, 1.24, 0],
+    rot: [0, 0, -0.18],
     rTop: 0.038,
     rBot: 0.034,
     height: 0.24,
@@ -118,7 +119,8 @@ const PART_DEFS = [
   {
     name: 'left_upper_arm',
     type: 'cylinder',
-    pos: [0.235, 1.24, 0],
+    pos: [0.217, 1.24, 0],
+    rot: [0, 0, 0.18],
     rTop: 0.038,
     rBot: 0.034,
     height: 0.24,
@@ -129,14 +131,14 @@ const PART_DEFS = [
   {
     name: 'right_elbow',
     type: 'sphere',
-    pos: [-0.235, 1.09, 0],
+    pos: [-0.238, 1.09, 0],
     radius: 0.037,
     segments: 12,
   },
   {
     name: 'left_elbow',
     type: 'sphere',
-    pos: [0.235, 1.09, 0],
+    pos: [0.238, 1.09, 0],
     radius: 0.037,
     segments: 12,
   },
@@ -145,7 +147,7 @@ const PART_DEFS = [
   {
     name: 'right_forearm',
     type: 'cylinder',
-    pos: [-0.235, 0.92, 0],
+    pos: [-0.238, 0.92, 0],
     rTop: 0.034,
     rBot: 0.027,
     height: 0.26,
@@ -154,7 +156,7 @@ const PART_DEFS = [
   {
     name: 'left_forearm',
     type: 'cylinder',
-    pos: [0.235, 0.92, 0],
+    pos: [0.238, 0.92, 0],
     rTop: 0.034,
     rBot: 0.027,
     height: 0.26,
@@ -165,14 +167,14 @@ const PART_DEFS = [
   {
     name: 'right_hand',
     type: 'box',
-    pos: [-0.235, 0.73, 0],
-    size: [0.044, 0.08, 0.024],
+    pos: [-0.238, 0.73, 0],
+    size: [0.062, 0.105, 0.034],
   },
   {
     name: 'left_hand',
     type: 'box',
-    pos: [0.235, 0.73, 0],
-    size: [0.044, 0.08, 0.024],
+    pos: [0.238, 0.73, 0],
+    size: [0.062, 0.105, 0.034],
   },
 
   // ── Thighs (quad / hamstring split) ──
@@ -221,15 +223,15 @@ const PART_DEFS = [
   {
     name: 'right_knee',
     type: 'sphere',
-    pos: [-0.085, 0.49, 0],
-    radius: 0.050,
+    pos: [-0.085, 0.49, 0.02],
+    radius: 0.055,
     segments: 14,
   },
   {
     name: 'left_knee',
     type: 'sphere',
-    pos: [0.085, 0.49, 0],
-    radius: 0.050,
+    pos: [0.085, 0.49, 0.02],
+    radius: 0.055,
     segments: 14,
   },
 
@@ -296,13 +298,13 @@ const PART_DEFS = [
     name: 'right_foot',
     type: 'box',
     pos: [-0.085, 0.08, 0.025],
-    size: [0.058, 0.038, 0.105],
+    size: [0.078, 0.05, 0.13],
   },
   {
     name: 'left_foot',
     type: 'box',
     pos: [0.085, 0.08, 0.025],
-    size: [0.058, 0.038, 0.105],
+    size: [0.078, 0.05, 0.13],
   },
 ];
 
@@ -413,6 +415,9 @@ function buildBody() {
 
     const mesh = new THREE.Mesh(geometry, material);
     mesh.position.set(def.pos[0], def.pos[1], def.pos[2]);
+    if (def.rot) {
+      mesh.rotation.set(def.rot[0], def.rot[1], def.rot[2]);
+    }
     mesh.name = def.name;
     mesh.userData.partName = def.name;
     mesh.userData.baseColor = PART_COLOR;
