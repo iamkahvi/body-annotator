@@ -421,7 +421,7 @@ function buildBody() {
 function addEyes() {
   const eyeGeo = new THREE.SphereGeometry(0.012, 8, 8);
   const eyeMat = new THREE.MeshPhongMaterial({
-    color: 0x888888,
+    color: 0x111111,
     shininess: 40,
   });
 
