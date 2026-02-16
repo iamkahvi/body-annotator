@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 
 // ── Constants ────────────────────────────────────────────────────────
 
@@ -22,7 +23,7 @@ const PART_DEFS = [
     name: 'head',
     type: 'halfSphere',
     side: 'front',
-    pos: [0, 1.62, 0],
+    pos: [0, 1.60, 0],
     radius: 0.105,
     segments: 20,
   },
@@ -30,7 +31,7 @@ const PART_DEFS = [
     name: 'back_of_head',
     type: 'halfSphere',
     side: 'back',
-    pos: [0, 1.62, 0],
+    pos: [0, 1.60, 0],
     radius: 0.105,
     segments: 20,
   },
@@ -39,10 +40,10 @@ const PART_DEFS = [
   {
     name: 'neck',
     type: 'cylinder',
-    pos: [0, 1.48, 0],
+    pos: [0, 1.46, 0],
     rTop: 0.038,
     rBot: 0.042,
-    height: 0.07,
+    height: 0.065,
     segments: 14,
   },
 
@@ -380,11 +381,19 @@ function createGeometry(def) {
         seg,
       );
     case 'box':
-      return new THREE.BoxGeometry(def.size[0], def.size[1], def.size[2]);
+      return createRoundedBox(def.size, def.radius);
     default:
       console.warn(`Unknown part type: ${def.type}`);
       return new THREE.BoxGeometry(0.05, 0.05, 0.05);
   }
+}
+
+function createRoundedBox(size, radiusOverride) {
+  const [w, h, d] = size;
+  const minDim = Math.min(w, h, d);
+  const radius =
+    radiusOverride != null ? radiusOverride : Math.max(0.004, minDim * 0.18);
+  return new RoundedBoxGeometry(w, h, d, 3, radius);
 }
 
 // ── Build the body ───────────────────────────────────────────────────
