@@ -6,9 +6,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 const PART_COLOR = 0x4a4a4a;
 const HOVER_COLOR = 0x5ab0ff;
 const HIGHLIGHT_COLOR_HEX = '#e06030';
-const PART_COLOR_HEX = '#4a4a4a';
 const BG_COLOR = 0x1a1a1a;
-const EDGE_COLOR = 0x2a2a2a;
 
 // ── Body part geometry definitions ───────────────────────────────────
 // All positions in world units. Y-up, Z-forward (toward viewer in front view).
@@ -317,6 +315,7 @@ let onPartClick = null;
 let tooltip = null;
 let pointerDownPos = null;
 let animFrameId = null;
+let resizeObserver = null;
 
 // ── Geometry helpers ─────────────────────────────────────────────────
 
@@ -570,7 +569,7 @@ function setupInteraction(container) {
 // ── Resize ───────────────────────────────────────────────────────────
 
 function handleResize(container) {
-  const ro = new ResizeObserver(() => {
+  resizeObserver = new ResizeObserver(() => {
     const w = container.clientWidth;
     const h = container.clientHeight;
     if (w === 0 || h === 0) return;
@@ -578,7 +577,7 @@ function handleResize(container) {
     camera.updateProjectionMatrix();
     renderer.setSize(w, h);
   });
-  ro.observe(container);
+  resizeObserver.observe(container);
 }
 
 // ── Animation loop ───────────────────────────────────────────────────
@@ -591,7 +590,43 @@ function animate() {
 
 // ── Public API ───────────────────────────────────────────────────────
 
+function dispose() {
+  if (animFrameId != null) {
+    cancelAnimationFrame(animFrameId);
+    animFrameId = null;
+  }
+  if (resizeObserver) {
+    resizeObserver.disconnect();
+    resizeObserver = null;
+  }
+  if (tooltip && tooltip.parentNode) {
+    tooltip.parentNode.removeChild(tooltip);
+    tooltip = null;
+  }
+  if (controls) {
+    controls.dispose();
+    controls = null;
+  }
+  allMeshes.forEach((mesh) => {
+    mesh.geometry.dispose();
+    mesh.material.dispose();
+  });
+  allMeshes = [];
+  bodyMeshes = {};
+  hoveredPart = null;
+  if (renderer) {
+    renderer.domElement.remove();
+    renderer.dispose();
+    renderer = null;
+  }
+  scene = null;
+  camera = null;
+}
+
 export function initBody3D(container, clickCallback) {
+  // Tear down previous instance if called again
+  if (renderer) dispose();
+
   onPartClick = clickCallback;
 
   // Scene

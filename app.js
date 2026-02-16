@@ -374,6 +374,12 @@ function handleImport() {
     return;
   }
 
+  const count = normalized.length;
+  const msg = notes.length > 0
+    ? `This will replace your ${notes.length} existing note(s) with ${count} imported note(s). Continue?`
+    : `Import ${count} note(s)?`;
+  if (!confirm(msg)) return;
+
   notes = normalized;
   saveNotes();
   renderNotes();
@@ -420,12 +426,14 @@ function normalizeNote(note) {
   if (!note || typeof note !== 'object') return null;
 
   const bodyPart = typeof note.bodyPart === 'string' ? note.bodyPart : null;
+  if (!bodyPart || !BODY_PARTS.includes(bodyPart)) return null;
+
   const description = typeof note.description === 'string' ? note.description.trim() : '';
   const startDate = toValidTimestamp(note.startDate);
   const endDate = note.endDate == null ? null : toValidTimestamp(note.endDate);
   const id = typeof note.id === 'string' ? note.id : crypto.randomUUID();
 
-  if (!bodyPart || !description || !startDate) return null;
+  if (!description || !startDate) return null;
 
   return {
     id,
