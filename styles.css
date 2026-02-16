@@ -58,10 +58,13 @@ main {
 .body-3d-container {
   width: 100%;
   max-width: 500px;
+  aspect-ratio: 3 / 4;
   border-radius: 12px;
   overflow: hidden;
   background: var(--bg);
 }
+
+/* 3D Body Canvas */
 
 .hint {
   color: var(--text-muted);

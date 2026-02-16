@@ -1,4 +1,4 @@
-import { initSVGBody, updateBodyHighlightsSVG } from './body-svg.js';
+import { initBody3D, updateBodyHighlights3D } from './body-3d-procedural.js';
 
 const STORAGE_KEY = 'body-annotator-notes';
 
@@ -74,7 +74,7 @@ function init() {
 // SVG Body setup
 function setupBody() {
   const container = document.getElementById('body-3d-container');
-  initSVGBody(container, (partName) => {
+  initBody3D(container, (partName) => {
     selectedPart = partName;
     openModal();
   });
@@ -495,7 +495,7 @@ function getFilteredNotes() {
 
 // Body part highlighting
 function updateBodyHighlights() {
-  updateBodyHighlightsSVG(notes);
+  updateBodyHighlights3D(notes);
 }
 
 // Rendering
