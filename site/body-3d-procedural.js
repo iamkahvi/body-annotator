@@ -716,10 +716,9 @@ export function updateBodyHighlights3D(notes) {
   // Most recent relevant timestamp per body part
   const mostRecent = {};
   notes.forEach((note) => {
-    const latest =
-      note.endDate == null && note.startDate != null
-        ? Date.now()
-        : (note.endDate ?? note.startDate ?? note.timestamp ?? 0);
+    if (note.endDate != null) return;
+    if (note.startDate == null) return;
+    const latest = Date.now();
     if (!mostRecent[note.bodyPart] || latest > mostRecent[note.bodyPart]) {
       mostRecent[note.bodyPart] = latest;
     }
