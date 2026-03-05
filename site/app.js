@@ -2,6 +2,7 @@ import { initBody3D, updateBodyHighlights3D } from './body-3d-procedural.js';
 
 const STORAGE_KEY = 'body-annotator-notes';
 const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+const filterStatusSelect = document.getElementById('filter-status');
 
 const BODY_PARTS = [
   'head', 'back_of_head', 'neck',
@@ -117,15 +118,19 @@ function loadNotes() {
       migrated = true;
     }
 
-    if (note.startDate && note.expiresAt == null) {
-      note.expiresAt = note.startDate + ONE_WEEK_MS;
+    // Migrate expiresAt → lastInteractedWith
+    if (note.expiresAt != null && note.lastInteractedWith == null) {
+      note.lastInteractedWith = note.expiresAt - ONE_WEEK_MS;
+      delete note.expiresAt;
+      migrated = true;
+    }
+
+    if (note.startDate && note.lastInteractedWith == null) {
+      note.lastInteractedWith = note.startDate;
       migrated = true;
     }
   });
-  const now = Date.now();
-  const before = notes.length;
-  notes = notes.filter(note => !isExpired(note, now));
-  if (migrated || notes.length !== before) saveNotes();
+  if (migrated) saveNotes();
 }
 
 function saveNotes() {
@@ -135,12 +140,13 @@ function saveNotes() {
 // Modal
 function openModal(existingNote = null) {
   if (existingNote) {
+    const expired = isExpired(existingNote);
     const isOngoing = existingNote.endDate == null;
     editingNoteId = existingNote.id;
     selectedPart = existingNote.bodyPart;
     populateEditFields(existingNote);
     populateDisplayFields(existingNote);
-    setModalMode('display', { isNew: false, isOngoing, isResolved: !isOngoing });
+    setModalMode('display', { isNew: false, isOngoing: !expired && isOngoing, isResolved: !expired && !isOngoing, isExpired: expired });
   } else {
     editingNoteId = null;
     const today = new Date().toISOString().split('T')[0];
@@ -166,7 +172,7 @@ function populateDisplayFields(note) {
   displayDescription.textContent = note.description;
 }
 
-function setModalMode(mode, { isNew = false, isOngoing = false, isResolved = false } = {}) {
+function setModalMode(mode, { isNew = false, isOngoing = false, isResolved = false, isExpired = false } = {}) {
   const isDisplay = mode === 'display';
   modalDisplay.classList.toggle('hidden', !isDisplay);
   modalEdit.classList.toggle('hidden', isDisplay);
@@ -174,8 +180,8 @@ function setModalMode(mode, { isNew = false, isOngoing = false, isResolved = fal
   modalActionsEdit.classList.toggle('hidden', isDisplay);
   resolveBtn.classList.toggle('hidden', !isDisplay || !isOngoing);
   markOngoingBtn.classList.toggle('hidden', !isDisplay || !isResolved);
-  editBtn.classList.toggle('hidden', !isDisplay);
-  deleteBtn.classList.toggle('hidden', isNew);
+  editBtn.classList.toggle('hidden', !isDisplay || isExpired);
+  deleteBtn.classList.toggle('hidden', isNew || isExpired);
   cancelEditBtn.classList.toggle('hidden', isNew);
 
   const title = selectedPart ? formatTitleCase(selectedPart) : 'Note';
@@ -206,7 +212,6 @@ function setupModalListeners() {
     if (endTs !== null && (Number.isNaN(endTs) || endTs < startTs)) return;
 
     const now = Date.now();
-    const expiresAt = now + ONE_WEEK_MS;
 
     if (editingNoteId) {
       const note = notes.find(n => n.id === editingNoteId);
@@ -215,7 +220,7 @@ function setupModalListeners() {
         note.startDate = startTs;
         note.endDate = endTs;
         note.description = text;
-        note.expiresAt = expiresAt;
+        note.lastInteractedWith = now;
       }
     } else {
       const existing = notes.find(n =>
@@ -227,7 +232,7 @@ function setupModalListeners() {
       if (existing) {
         existing.startDate = startTs;
         existing.endDate = endTs;
-        existing.expiresAt = expiresAt;
+        existing.lastInteractedWith = now;
         notes = [existing, ...notes.filter(n => n.id !== existing.id)];
       } else {
         const note = {
@@ -236,7 +241,7 @@ function setupModalListeners() {
           startDate: startTs,
           endDate: endTs,
           description: text,
-          expiresAt
+          lastInteractedWith: now
         };
         notes.unshift(note);
       }
@@ -255,7 +260,7 @@ function setupModalListeners() {
     const today = new Date().toISOString().split('T')[0];
     const endTs = new Date(today + 'T12:00:00').getTime();
     note.endDate = endTs;
-    note.expiresAt = Date.now() + ONE_WEEK_MS;
+    note.lastInteractedWith = Date.now();
 
     saveNotes();
     renderNotes();
@@ -268,7 +273,7 @@ function setupModalListeners() {
     if (!note) return;
 
     note.endDate = null;
-    note.expiresAt = Date.now() + ONE_WEEK_MS;
+    note.lastInteractedWith = Date.now();
 
     saveNotes();
     renderNotes();
@@ -419,7 +424,7 @@ function getExportPayload() {
   return {
     version: 1,
     exportedAt: new Date().toISOString(),
-    notes: getActiveNotes()
+    notes: notes
   };
 }
 
@@ -461,7 +466,9 @@ function normalizeNote(note) {
   const startDate = toValidTimestamp(note.startDate);
   const endDate = note.endDate == null ? null : toValidTimestamp(note.endDate);
   const id = typeof note.id === 'string' ? note.id : crypto.randomUUID();
-  const expiresAt = toValidTimestamp(note.expiresAt);
+  const lastInteractedWith = toValidTimestamp(note.lastInteractedWith)
+    ?? (toValidTimestamp(note.expiresAt) ? toValidTimestamp(note.expiresAt) - ONE_WEEK_MS : null)
+    ?? startDate;
 
   if (!description || !startDate) return null;
 
@@ -471,7 +478,7 @@ function normalizeNote(note) {
     startDate,
     endDate,
     description,
-    expiresAt: expiresAt ?? (startDate + ONE_WEEK_MS)
+    lastInteractedWith
   };
 }
 
@@ -487,6 +494,7 @@ function setupFilterListeners() {
   searchInput.addEventListener('input', renderNotes);
   sortSelect.addEventListener('change', renderNotes);
   filterPartSelect.addEventListener('change', renderNotes);
+  filterStatusSelect.addEventListener('change', renderNotes);
 }
 
 function populateFilterDropdown() {
@@ -501,10 +509,25 @@ function populateFilterDropdown() {
 function getFilteredNotes() {
   const search = searchInput.value.toLowerCase();
   const filterPart = filterPartSelect.value;
+  const filterStatus = filterStatusSelect.value;
   const sort = sortSelect.value;
   const now = Date.now();
 
-  let filtered = getActiveNotes(now);
+  let filtered;
+  switch (filterStatus) {
+    case 'expired':
+      filtered = notes.filter(n => isExpired(n, now));
+      break;
+    case 'active':
+      filtered = getActiveNotes(now).filter(n => n.endDate == null);
+      break;
+    case 'resolved':
+      filtered = getActiveNotes(now).filter(n => n.endDate != null);
+      break;
+    default: // 'all'
+      filtered = getActiveNotes(now);
+      break;
+  }
 
   if (filterPart) {
     filtered = filtered.filter(n => n.bodyPart === filterPart);
@@ -558,8 +581,9 @@ function renderNotes() {
   notesList.innerHTML = filtered.map(note => {
     const dateRange = formatDateRange(note.startDate, note.endDate);
     const durationLabel = formatDuration(note.startDate, note.endDate);
-    const statusLabel = note.endDate == null ? 'Ongoing' : 'Resolved';
-    const statusClass = note.endDate == null ? 'note-status--ongoing' : 'note-status--resolved';
+    const expired = isExpired(note);
+    const statusLabel = expired ? 'Expired' : note.endDate == null ? 'Ongoing' : 'Resolved';
+    const statusClass = expired ? 'note-status--expired' : note.endDate == null ? 'note-status--ongoing' : 'note-status--resolved';
 
     return `
       <div class="note-card" data-id="${note.id}">
@@ -596,7 +620,7 @@ function getActiveNotes(now = Date.now()) {
 }
 
 function isExpired(note, now = Date.now()) {
-  return note.expiresAt != null && note.expiresAt <= now;
+  return note.lastInteractedWith != null && now > note.lastInteractedWith + ONE_WEEK_MS;
 }
 
 // Utilities

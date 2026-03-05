@@ -185,6 +185,11 @@ main {
   border: 1px solid rgba(127, 226, 158, 0.4);
 }
 
+.note-status--expired {
+  color: #999;
+  border: 1px solid rgba(153, 153, 153, 0.4);
+}
+
 .note-date {
   font-size: 0.75rem;
   color: var(--text-muted);
