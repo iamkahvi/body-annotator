@@ -8,6 +8,9 @@ A small web app to log body‑part issues with notes and date ranges.
 
 Notes are stored in `localStorage` under `body-annotator-notes`.
 
+## Note Expiry
+Notes automatically expire one week after they were last saved or modified. Any action that updates a note (editing, resolving, marking as ongoing) resets the expiry timer to one week from that moment. Expired notes are pruned on page load and hidden from the UI while the page is open.
+
 ## Built With
 - Vanilla JavaScript
 - SVG body map (front/back)
